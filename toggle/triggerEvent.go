@@ -40,10 +40,8 @@ func triggerSunriseEvent() {
 
 // Function to trigger at sunset
 func triggerSunsetEvent() {
-	for _, pinId := range gpioHandler.LightPintIds {
-		gpioHandler.TogglePinChan <- gpioHandler.TogglePinPayload{
-			PinId: pinId,
-			Event: "on",
-		}
+	gpioHandler.TogglePinChan <- gpioHandler.TogglePinPayload{
+		PinId: gpioHandler.LightPintIds["fairyLights"],
+		Event: "on",
 	}
 }
