@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiple Light Toggle</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            margin: 0;
+            background-color: #f0f0f0;
+            padding-top: 20px;
+        }
+
+        .container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .light {
+            width: 150px;
+            height: 150px;
+            background-color: grey;
+            border-radius: 50%;
+            margin: 20px auto;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .light span {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: black;
+        }
+
+        .light.on {
+            background-color: yellow;
+            box-shadow: 0 0 30px rgba(255, 223, 0, 0.8);
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: blue;
+            color: white;
+        }
+
+        button:disabled {
+            background-color: grey;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Fairy Lights</h1>
+    <div id="light1" class="light">
+        <span id="status1">OFF</span>
+    </div>
+    <button id="toggleBtn1" onclick="toggleLight('light1', 'status1', 'toggleBtn1', 'fairyLights')">Turn On</button>
+</div>
+
+<div class="container">
+    <h1>Worm Light</h1>
+    <div id="light2" class="light">
+        <span id="status2">OFF</span>
+    </div>
+    <button id="toggleBtn2" onclick="toggleLight('light2', 'status2', 'toggleBtn2', 'warmLight')">Turn On</button>
+</div>
+
+<script>
+    // Function to toggle the light and update the button text
+    function toggleLight(lightId, statusId, buttonId, bulbId) {
+        const lightElement = document.getElementById(lightId);
+        const statusElement = document.getElementById(statusId);
+        const buttonElement = document.getElementById(buttonId);
+        let newState;
+
+        // Disable the button while making API call
+        buttonElement.disabled = true;
+
+        if (lightElement.classList.contains('on')) {
+            // Turn off the light
+            lightElement.classList.remove('on');
+            statusElement.innerText = 'OFF';
+            buttonElement.innerText = 'Turn On';
+            newState = 'off';
+        } else {
+            // Turn on the light
+            lightElement.classList.add('on');
+            statusElement.innerText = 'ON';
+            buttonElement.innerText = 'Turn Off';
+            newState = 'on';
+        }
+
+        // Send the new state to the server
+        sendStateToServer(bulbId, newState, buttonElement);
+    }
+
+    // Function to send the light state to the server via POST and re-enable button after API call
+    function sendStateToServer(bulbId, state, buttonElement) {
+        fetch('http://192.168.29.171:8082/toggle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                bulbId: bulbId,
+                state: state
+            }),
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                // Re-enable the button after the API call completes
+                buttonElement.disabled = false;
+            });
+    }
+
+    // Function to update the UI based on the status of bulbs from the API response
+    function updateLightStatus(bulbId, status) {
+        const lightElement = document.getElementById(bulbId === 'fairyLights' ? 'light1' : 'light2');
+        const statusElement = document.getElementById(bulbId === 'fairyLights' ? 'status1' : 'status2');
+        const buttonElement = document.getElementById(bulbId === 'fairyLights' ? 'toggleBtn1' : 'toggleBtn2');
+
+        if (status === 'on') {
+            lightElement.classList.add('on');
+            statusElement.innerText = 'ON';
+            buttonElement.innerText = 'Turn Off';
+        } else {
+            lightElement.classList.remove('on');
+            statusElement.innerText = 'OFF';
+            buttonElement.innerText = 'Turn On';
+        }
+    }
+
+    // Function to fetch the status of all lights when the page loads
+    function fetchInitialStatus() {
+        fetch('http://192.168.29.171:8082/status')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Fetched Status:', data);
+                updateLightStatus('fairyLights', data.fairyLights);
+                updateLightStatus('warmLight', data.warmLight);
+            })
+            .catch((error) => {
+                console.error('Error fetching initial status:', error);
+            });
+    }
+
+    // Fetch status when the page loads
+    window.onload = fetchInitialStatus;
+</script>
+
+</body>
+</html>
